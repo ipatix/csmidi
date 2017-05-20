@@ -6,7 +6,7 @@ using System.IO;
 
 namespace csmidi
 {
-    static class MidiSaver
+    public static class MidiSaver
     {
         public static void saveToFile(string filePath, List<MidiTrack> midiTracks, ushort timeDivision)
         {

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace csmidi
 {
-    class MidiFile
+    public class MidiFile
     {
         public ushort timeDivision;
 
@@ -39,7 +39,7 @@ namespace csmidi
         }
     }
 
-    class MidiTrack
+    public class MidiTrack
     {
         public List<MidiEvent> midiEvents;
 
@@ -49,7 +49,7 @@ namespace csmidi
         }
     }
 
-    abstract class MidiEvent
+    public abstract class MidiEvent
     {
         private long _ticks;
         public long absoluteTicks { 
@@ -71,7 +71,7 @@ namespace csmidi
         }
     }
 
-    class MessageMidiEvent : MidiEvent
+    public class MessageMidiEvent : MidiEvent
     {
         private byte midiChannel;
         private byte parameter1;
@@ -132,7 +132,7 @@ namespace csmidi
         }
     }
 
-    class MetaMidiEvent : MidiEvent
+    public class MetaMidiEvent : MidiEvent
     {
         private byte[] data;
         private byte metaType;
@@ -156,7 +156,7 @@ namespace csmidi
         }
     }
 
-    class SysExMidiEvent : MidiEvent
+    public class SysExMidiEvent : MidiEvent
     {
         private byte[] data;
         private byte sysexType;
@@ -179,7 +179,7 @@ namespace csmidi
         }
     }
 
-    internal enum NormalType
+    public enum NormalType
     {
         NoteON, 
         NoteOFF, 

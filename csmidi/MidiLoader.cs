@@ -3,29 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 
 namespace csmidi
 {
-    static class MidiLoader
+    public static class MidiLoader
     {
         public static void loadFromFile(string filePath, List<MidiTrack> midiTracks, ref ushort timeDivision)
         {
             midiTracks.Clear();     // remove all elements currently loaded
             // check if the Midi is actually a Midi file
-            Console.WriteLine("Verifying MIDI file...");
+            Debug.WriteLine("Verifying MIDI file...");
             verifyMidi(filePath);   // this will raise an exception if the Midi file is invalid
-            Console.WriteLine("Identify MIDI file type...");
+            Debug.WriteLine("Identify MIDI file type...");
             int midiType = getMidiType(filePath);
-            Console.WriteLine("The MIDI file type is #{0}", midiType);
+            Debug.WriteLine("The MIDI file type is #{0}", midiType);
 
             switch (midiType)
             {
                 case 0:
-                    Console.WriteLine("Converting and loading MIDI...");
+                    Debug.WriteLine("Converting and loading MIDI...");
                     loadAndConvertTypeZero(filePath, midiTracks, ref timeDivision);
                     break;
                 case 1:
-                    Console.WriteLine("Loading MIDI...");
+                    Debug.WriteLine("Loading MIDI...");
                     loadDirectly(filePath, midiTracks, ref timeDivision);
                     break;
                 case 2:
