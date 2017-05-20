@@ -73,10 +73,10 @@ namespace csmidi
 
     public class MessageMidiEvent : MidiEvent
     {
-        private byte midiChannel;
-        private byte parameter1;
-        private byte parameter2;
-        private NormalType type;
+        public byte midiChannel;
+        public byte parameter1;
+        public byte parameter2;
+        public NormalType type { private set; get; }
 
         public override byte[] getEventData()
         {
