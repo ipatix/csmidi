@@ -148,6 +148,45 @@ namespace csmidi
             return returnData;
         }
 
+        public MetaType getMetaType()
+        {
+            switch (metaType)
+            {
+                case 0x0:
+                    return MetaType.SequenceNumber;
+                case 0x1:
+                    return MetaType.TextEvent;
+                case 0x2:
+                    return MetaType.CopyrightNotice;
+                case 0x3:
+                    return MetaType.TrackName;
+                case 0x4:
+                    return MetaType.InstrumentName;
+                case 0x5:
+                    return MetaType.LyricText;
+                case 0x6:
+                    return MetaType.MarkerText;
+                case 0x7:
+                    return MetaType.CuePoint;
+                case 0x20:
+                    return MetaType.ChannelPrefix;
+                case 0x2F:
+                    return MetaType.EndOfTrack;
+                case 0x51:
+                    return MetaType.TempoSetting;
+                case 0x54:
+                    return MetaType.SMPTEOffset;
+                case 0x58:
+                    return MetaType.TimeSignature;
+                case 0x59:
+                    return MetaType.KeySignature;
+                case 0x7F:
+                    return MetaType.SequencerSpecific;
+                default:
+                    return MetaType.UNKNOWN;
+            }
+        }
+
         public MetaMidiEvent(long tick, byte _metaType, byte[] _data)
             : base(tick)
         {
@@ -188,6 +227,26 @@ namespace csmidi
         Program, 
         ChannelAftertouch, 
         PitchBend
+    }
+
+    public enum MetaType
+    {
+        SequenceNumber,
+        TextEvent,
+        CopyrightNotice,
+        TrackName,
+        InstrumentName,
+        LyricText,
+        MarkerText,
+        CuePoint,
+        ChannelPrefix,
+        EndOfTrack,
+        TempoSetting,
+        SMPTEOffset,
+        TimeSignature,
+        KeySignature,
+        SequencerSpecific,
+        UNKNOWN
     }
 
     internal static class VariableLength
