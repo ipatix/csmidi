@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
@@ -9,25 +8,26 @@ namespace csmidi
 {
     public static class MidiLoader
     {
-        public static void loadFromFile(string filePath, List<MidiTrack> midiTracks, ref ushort timeDivision)
+
+        public static void loadFromStream(Stream midiStream, List<MidiTrack> midiTracks, ref ushort timeDivision)
         {
             midiTracks.Clear();     // remove all elements currently loaded
-            // check if the Midi is actually a Midi file
-            Debug.WriteLine("Verifying MIDI file...");
-            verifyMidi(filePath);   // this will raise an exception if the Midi file is invalid
-            Debug.WriteLine("Identify MIDI file type...");
-            int midiType = getMidiType(filePath);
-            Debug.WriteLine("The MIDI file type is #{0}", midiType);
+            // check if the Midi data is valid
+            Debug.WriteLine("Verifying MIDI data...");
+            verifyMidi(midiStream);   // this will raise an exception if the Midi data is invalid
+            Debug.WriteLine("Identify MIDI data type...");
+            int midiType = getMidiType(midiStream);
+            Debug.WriteLine("The MIDI data type is #{0}", midiType.ToString());
 
             switch (midiType)
             {
                 case 0:
                     Debug.WriteLine("Converting and loading MIDI...");
-                    loadAndConvertTypeZero(filePath, midiTracks, ref timeDivision);
+                    loadAndConvertTypeZero(midiStream, midiTracks, ref timeDivision);
                     break;
                 case 1:
                     Debug.WriteLine("Loading MIDI...");
-                    loadDirectly(filePath, midiTracks, ref timeDivision);
+                    loadDirectly(midiStream, midiTracks, ref timeDivision);
                     break;
                 case 2:
                     throw new Exception("MIDI type 2 is not supported by this program!");
@@ -36,12 +36,19 @@ namespace csmidi
             }
         }
 
-        private static void loadDirectly(string filePath, List<MidiTrack> midiTracks, ref ushort timeDivision)              // returns the MIDI loaded in the List of all individual tracks
+        public static void loadFromFile(string filePath, List<MidiTrack> midiTracks, ref ushort timeDivision)
         {
-            // FileStreams seem to have their own buffering layer so there is no need for an additional Buffered Stream
-            FileStream midiFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            BinaryReader midiBinaryStream = new BinaryReader(midiFileStream);
-            midiFileStream.Position = 0xA;      // seek to the amount of tracks in the MIDI file
+            using (FileStream midiFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                loadFromStream(midiFileStream, midiTracks, ref timeDivision);
+            }
+
+        }
+
+        private static void loadDirectly(Stream midiStream, List<MidiTrack> midiTracks, ref ushort timeDivision)              // returns the MIDI loaded in the List of all individual tracks
+        {
+            BinaryReader midiBinaryStream = new BinaryReader(midiStream);
+            midiStream.Position = 0xA;      // seek to the amount of tracks in MIDI data
             int numTracks = midiBinaryStream.ReadByte() << 8 | midiBinaryStream.ReadByte();
             timeDivision = (ushort)(midiBinaryStream.ReadByte() << 8 | midiBinaryStream.ReadByte());
             // finished reading the header data, now continue transscribing the tracks
@@ -77,7 +84,7 @@ namespace csmidi
 
                     if (eventTypeByte == 0xFF)      // if META Event
                     {
-                        byte metaType = (byte)midiFileStream.ReadByte();
+                        byte metaType = (byte)midiStream.ReadByte();
                         long metaLength = readVariableLengthValue(midiBinaryStream);
                         byte[] metaData = new byte[metaLength];
                         midiBinaryStream.Read(metaData, 0, (int)metaLength);
@@ -198,15 +205,12 @@ namespace csmidi
                 }   // end of the event transscribing loop
                 #endregion
             }   // end of the track loop
-            midiBinaryStream.BaseStream.Close();
         }   // end of function loadDirectly
 
-        private static void loadAndConvertTypeZero(string filePath, List<MidiTrack> midiTracks, ref ushort timeDivision)    // returns the MIDI loaded in the List of all individual MIDI channels split up into 16 tracks
+        private static void loadAndConvertTypeZero(Stream midiStream, List<MidiTrack> midiTracks, ref ushort timeDivision)    // returns the MIDI loaded in the List of all individual MIDI channels split up into 16 tracks
         {
-            // FileStreams seem to have their own buffering layer so there is no need for an additional Buffered Stream
-            FileStream midiFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            BinaryReader midiBinaryStream = new BinaryReader(midiFileStream);
-            midiFileStream.Position = 0xC;      // seek to the amount of tracks in the MIDI file
+            BinaryReader midiBinaryStream = new BinaryReader(midiStream);
+            midiStream.Position = 0xC;      // seek to the amount of tracks in the MIDI data
             timeDivision = (ushort)(midiBinaryStream.ReadByte() << 8 | midiBinaryStream.ReadByte());
             // finished reading the header data, now continue transscribing the single track to multiple ones, depending on the channel
 
@@ -239,7 +243,7 @@ namespace csmidi
                 // do a jumptable for each event type
                 if (eventTypeByte == 0xFF)      // if META Event
                 {
-                    byte metaType = (byte)midiFileStream.ReadByte();
+                    byte metaType = (byte)midiStream.ReadByte();
                     long metaLength = readVariableLengthValue(midiBinaryStream);
                     byte[] metaData = new byte[metaLength];
                     midiBinaryStream.Read(metaData, 0, (int)metaLength);
@@ -375,32 +379,27 @@ namespace csmidi
                 }
             }
             #endregion
-            midiFileStream.Close();
         }
 
-        private static void verifyMidi(string filePath)     // throws an Exception if a BAD file was selected ; FINISHED
+        private static void verifyMidi(Stream midiStream)     // throws an Exception if MIDI data is malformed ; FINISHED
         {
-            FileStream midiFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             byte[] midiHeaderString = new byte[4];
-            midiFileStream.Position = 0;
-            midiFileStream.Read(midiHeaderString, 0, 4);
+            midiStream.Position = 0;
+            midiStream.Read(midiHeaderString, 0, 4);
             if (Encoding.ASCII.GetString(midiHeaderString, 0, 4) != "MThd") 
                 throw new Exception("MThd string wasn't found in the MIDI header!");
-            if (midiFileStream.ReadByte() != 0x0 || midiFileStream.ReadByte() != 0x0 || midiFileStream.ReadByte() != 0x0 || midiFileStream.ReadByte() != 0x6) 
+            if (midiStream.ReadByte() != 0x0 || midiStream.ReadByte() != 0x0 || midiStream.ReadByte() != 0x0 || midiStream.ReadByte() != 0x6)
                 throw new Exception("MThd chunk size not #0x6!");
-            midiFileStream.Position = 0xA;
-            int numTracks = midiFileStream.ReadByte() << 8 | midiFileStream.ReadByte();
+            midiStream.Position = 0xA;
+            int numTracks = midiStream.ReadByte() << 8 | midiStream.ReadByte();
             if (numTracks == 0) 
                 throw new Exception("The MIDI has no tracks to convert!");
-            midiFileStream.Close();
         }
 
-        private static int getMidiType(string filePath)     // returns the MIDI type automonously ; FINISHED
+        private static int getMidiType(Stream midiStream)     // returns the MIDI type automonously ; FINISHED
         {
-            FileStream midiFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            midiFileStream.Position = 9;    // position to the midi Type
-            int returnValue = midiFileStream.ReadByte();
-            midiFileStream.Close();
+            midiStream.Position = 9;    // position to the midi Type
+            int returnValue = midiStream.ReadByte();
             return returnValue;
         }
 

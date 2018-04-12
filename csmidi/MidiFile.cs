@@ -16,10 +16,14 @@ namespace csmidi
             timeDivision = 0;
         }
 
+        public void loadMidiFromStream(System.IO.Stream midiStream)
+        {
+            MidiLoader.loadFromStream(midiStream, midiTracks, ref timeDivision);
+        }
+
         public void loadMidiFromFile(string filePath)
         {
-            // first clear the currently loaded Midi by clearing the List
-            MidiLoader.loadFromFile(filePath, midiTracks, ref timeDivision);      // load the Midi using the MidiLoader class
+            MidiLoader.loadFromFile(filePath, midiTracks, ref timeDivision);
         }
 
         public void saveMidiToFile(string filePath)
